@@ -1,10 +1,10 @@
 # KaushalSetu Demo Script (3 minutes)
 
-Every URL below is the Vercel production URL, written here as `https://<app>.vercel.app`.
+Every URL below is the Vercel production URL, written here as https://kaushalsetu-zeta.vercel.app.
 
 ## Before the slot (T minus 5 minutes)
 
-1. Open `https://<app>.vercel.app/login` in a desktop browser at 1366x768 or larger. If the counters on the left show dashes, the Render API is waking up; wait 40 to 60 seconds.
+1. Open `https://kaushalsetu-zeta.vercel.app/login` in a desktop browser at 1366x768 or larger. If the counters on the left show dashes, the Render API is waking up; wait 40 to 60 seconds.
 2. Sign in once as the Secretary, open the Simulation console (bottom right) and check the cohort tiles read about 21 scheduled. If a previous rehearsal left them in another state, that is fine: the Trigger button resets them.
 3. Keep three browser tabs ready: the dashboard, a blank tab for the WhatsApp simulator and a blank tab for the employer link. On a phone, the employer link also works (`/verify/...` survives a direct open).
 4. Leave Demo mode on in the sidebar. It shows the simulation console and the as-of date control.

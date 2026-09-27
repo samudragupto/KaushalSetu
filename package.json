@@ -23,7 +23,8 @@
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:seed": "tsx prisma/seed.ts",
-    "db:reset": "prisma migrate reset --force --skip-generate"
+    "db:reset": "prisma migrate reset --force --skip-generate",
+    "smoke": "node scripts/smoke.mjs"
   },
   "devDependencies": {
     "prisma": "^6.19.0",
