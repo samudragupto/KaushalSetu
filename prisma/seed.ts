@@ -433,10 +433,10 @@ function simulateGeneric(t: TraineeCtx) {
   if (!placed) {
     const at = plusDays(end, 90 + int(0, 20));
     if (!notFuture(at)) return;
-    const weights = nagpurIt ? [10, 8, 4, 62, 10, 3, 3] : NONPLACE_WEIGHTS;
+    const weights = nagpurIt || nashikCnc ? [10, 8, 4, 62, 10, 3, 3] : NONPLACE_WEIGHTS;
     const reason = weighted(ATTRITION_REASONS, weights);
     const payload: Record<string, unknown> = { stage: 'Not placed after training' };
-    if (reason === 'SKILL_MISMATCH' && chance(0.8)) Object.assign(payload, skillQuote(t.courseCode, nagpurIt ? 'react' : undefined));
+    if (reason === 'SKILL_MISMATCH' && chance(0.8)) Object.assign(payload, skillQuote(t.courseCode, nagpurIt ? 'react' : nashikCnc ? 'cnc_5axis' : undefined));
     pushEvent(t, 'UNEMPLOYED', at, pick(['BOT', 'BOT', 'AGENT_CALL', 'TRAINER_REPORT'] as Source[]), payload, reason);
     return;
   }
@@ -504,9 +504,9 @@ function simulateWageJob(t: TraineeCtx, placedAt: Date, sectorName: string, nash
     }
   }
   if (attritionAt && notFuture(attritionAt)) {
-    const reason = nashikCnc ? weighted(ATTRITION_REASONS, [22, 12, 12, 42, 6, 3, 3]) : weighted(ATTRITION_REASONS, ATTRITION_WEIGHTS);
+    const reason = nashikCnc ? weighted(ATTRITION_REASONS, [16, 9, 9, 56, 5, 3, 2]) : weighted(ATTRITION_REASONS, ATTRITION_WEIGHTS);
     const payload: Record<string, unknown> = { employerName: employer.name, tenureMonths: Math.round(months ?? 0) };
-    if (reason === 'SKILL_MISMATCH' && chance(0.75)) Object.assign(payload, skillQuote(t.courseCode, nashikCnc ? 'cnc_5axis' : undefined));
+    if (reason === 'SKILL_MISMATCH' && chance(nashikCnc ? 0.92 : 0.75)) Object.assign(payload, skillQuote(t.courseCode, nashikCnc ? 'cnc_5axis' : undefined));
     pushEvent(t, 'ATTRITION', attritionAt, pick(['BOT', 'BOT', 'AGENT_CALL', 'EPFO_SIM'] as Source[]), payload, reason);
     closeRecord(record, attritionAt);
     record = null;
@@ -564,14 +564,14 @@ function scheduleFollowUps(t: TraineeCtx, opts: { escalateRecent?: boolean; forc
     const id = newId('fup');
     const sentAt = withHour(due);
     const snapshot = statusSummary(t, due);
-    const escalateP = age < 21 ? 0.1 : 0.13;
+    const escalateP = age < 7 ? 0.16 : 0.13;
     const escalated = opts.escalateRecent === false ? false : chance(escalateP);
     if (age < 2) {
       rows.followUps.push({ id, traineeId: t.id, milestone, channel: 'WHATSAPP', status: 'SENT', attempts: 1, responses: {}, dueAt: due, sentAt, respondedAt: null, createdAt: sentAt });
       continue;
     }
     if (escalated) {
-      const resolved = age >= 21;
+      const resolved = age >= 7;
       rows.followUps.push({ id, traineeId: t.id, milestone, channel: 'WHATSAPP', status: 'ESCALATED', attempts: 2, responses: resolved ? { ...snapshot, via: 'AGENT' } : {}, dueAt: due, sentAt, respondedAt: null, createdAt: sentAt });
       const taskCreated = plusDays(sentAt, 2 + int(0, 1));
       const taskRow: Row = {
@@ -689,7 +689,7 @@ function buildPersonas() {
   const suM6 = plusDays(suEnd, 180);
   const suFollow = newId('fup');
   rows.followUps.push({ id: suFollow, traineeId: sunil.id, milestone: 'MONTH_6', channel: 'WHATSAPP', status: 'ESCALATED', attempts: 2, responses: {}, dueAt: suM6, sentAt: withHour(suM6), respondedAt: null, createdAt: suM6 });
-  rows.agentTasks.push({ id: newId('tsk'), followUpId: suFollow, traineeId: sunil.id, assignedTo: null, status: 'QUEUED', callNotes: null, resolvedOutcome: Prisma.DbNull, createdAt: withHour(daysAgo(4)), openedAt: null, resolvedAt: null });
+  rows.agentTasks.push({ id: newId('tsk'), followUpId: suFollow, traineeId: sunil.id, assignedTo: null, status: 'QUEUED', callNotes: null, resolvedOutcome: Prisma.DbNull, createdAt: withHour(daysAgo(6)), openedAt: null, resolvedAt: null });
   personas.push({ key: 'sunil', ctx: sunil });
 
   // 5. Priya Deshmukh: Nagpur full-stack, not placed, React.js gap.
@@ -954,7 +954,7 @@ async function main() {
     { id: newId('usr'), role: 'GOVT', name: 'Vikas Deshpande', title: 'Secretary, Skill Development and Entrepreneurship', email: 'secretary@skills.mh.example.in', passwordHash, providerId: null },
     { id: newId('usr'), role: 'PROVIDER', name: 'Meena Joshi', title: 'Principal, Government ITI Nashik', email: 'principal.iti.nashik@skills.mh.example.in', passwordHash, providerId: providerIds.get('Government ITI Nashik') },
     { id: newId('usr'), role: 'AGENT', name: 'Rahul Sonawane', title: 'Field Agent, Nashik Division', email: 'agent.nashik@skills.mh.example.in', passwordHash, providerId: null },
-    { id: newId('usr'), role: 'AGENT', name: 'Shabana Pathan', title: 'Field Agent, Chhatrapati Sambhajinagar Division', email: 'agent.csn@skills.mh.example.in', passwordHash, providerId: null },
+    { id: newId('usr'), role: 'AGENT', name: 'Shabana Pathan', title: 'Field Agent, Chhatrapati Sambhajinagar Division', email: 'agent.sambhajinagar@skills.mh.example.in', passwordHash, providerId: null },
   ];
   await insert('users', users, (c) => prisma.user.createMany({ data: c as Prisma.UserCreateManyInput[] }));
   const secondAgent = users[3].id;

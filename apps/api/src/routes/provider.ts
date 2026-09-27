@@ -95,7 +95,9 @@ providerRouter.get(
   asyncHandler(async (req, res) => {
     const id = providerId(req);
     const records = await prisma.employmentRecord.findMany({
-      where: { status: 'PENDING_VERIFICATION', trainee: { enrollments: { some: { providerId: id } } } },
+      // Claims older than 180 days without an employer response are handled by the EPFO match and
+      // agent calls instead of the link, so they are left out of this working list.
+      where: { status: 'PENDING_VERIFICATION', createdAt: { gte: new Date(Date.now() - 180 * 86_400_000) }, trainee: { enrollments: { some: { providerId: id } } } },
       include: { employer: true, trainee: true, tokens: { where: { usedAt: null, expiresAt: { gt: new Date() } }, orderBy: { createdAt: 'desc' }, take: 1 } },
       orderBy: { createdAt: 'asc' },
     });

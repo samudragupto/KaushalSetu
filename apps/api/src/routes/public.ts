@@ -69,6 +69,7 @@ publicRouter.get(
       orderBy: { unifiedId: 'asc' },
       include: { enrollments: { include: { course: true, provider: true }, take: 1 } },
     });
+    personas.sort((a, b) => a.unifiedId.slice(-6).localeCompare(b.unifiedId.slice(-6)));
     res.json(
       personas.map((p) => ({
         id: p.id,
