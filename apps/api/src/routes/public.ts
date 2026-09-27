@@ -129,7 +129,7 @@ publicRouter.get(
       },
       districts,
       sectors,
-      suppressedCells: districts.filter((d) => d.placementRate === null).length,
+      suppressedCells: districts.reduce((n, d) => n + [d.trainees, d.placementRate, d.retention6, d.medianWage].filter((v) => v === null).length, 0),
     });
   }),
 );

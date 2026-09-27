@@ -26,7 +26,7 @@ interface Persona {
 function LanguageSwitch({ lang, setLang }: { lang: string; setLang: (l: 'mr' | 'hi' | 'en') => void }) {
   return (
     <div className="flex items-center gap-1 rounded-lg bg-grid p-0.5">
-      <Languages className="ml-1.5 h-3.5 w-3.5 text-muted" strokeWidth={1.5} />
+      <Languages className="ml-1.5 hidden h-3.5 w-3.5 text-muted sm:block" strokeWidth={1.5} />
       {LANGS.map((l) => (
         <button key={l.code} type="button" onClick={() => setLang(l.code)} className={clsx('rounded-md px-2 py-1 text-[12px] font-medium transition-colors', lang === l.code ? 'bg-white text-primary-700 shadow-card' : 'text-muted hover:text-ink')}>
           {l.label}

@@ -1,0 +1,60 @@
+# Render Blueprint: one web service for the KaushalSetu API only.
+# No Postgres add-on (the database is Supabase) and no static site (the web app is on Vercel).
+#
+# rootDir is intentionally not set: the API imports /prisma and /packages/shared, which live
+# outside apps/api. buildFilter limits auto-deploys to the paths the API depends on.
+services:
+  - type: web
+    name: kaushalsetu-api
+    runtime: node
+    plan: free
+    region: singapore
+    buildCommand: npm ci --include=dev --workspace @kaushalsetu/api --include-workspace-root && npm run build -w @kaushalsetu/api && npx prisma migrate deploy
+    startCommand: node apps/api/dist/server.js
+    healthCheckPath: /health
+    autoDeploy: true
+    buildFilter:
+      paths:
+        - apps/api/**
+        - packages/shared/**
+        - prisma/**
+        - package.json
+        - package-lock.json
+        - render.yaml
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: NODE_ENV
+        value: production
+      - key: DEMO_MODE
+        value: "true"
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ORIGIN
+        sync: false
+      - key: PUBLIC_WEB_URL
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_STORAGE_BUCKET
+        value: outcome-evidence
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: WHATSAPP_TOKEN
+        sync: false
+      - key: WHATSAPP_PHONE_NUMBER_ID
+        sync: false
+      - key: WHATSAPP_VERIFY_TOKEN
+        sync: false
+      - key: GSTIN_API_KEY
+        sync: false
+      - key: GSTIN_API_URL
+        sync: false
+      - key: BHASHINI_API_KEY
+        sync: false

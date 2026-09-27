@@ -6,8 +6,9 @@ const ANON = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 
 export const realtimeEnabled = Boolean(URL_ && ANON);
 
-// Optional: when the Supabase anon key is configured, database changes on EmploymentRecord and
-// FollowUp invalidate queries immediately. 5-second polling stays on either way.
+// Optional: with the Supabase anon key configured, a Realtime Broadcast from the API
+// ("kaushalsetu-live", payload = data version only) triggers an immediate refetch.
+// 5-second polling stays on either way, so this only shortens the delay.
 export function useRealtimeInvalidation() {
   const qc = useQueryClient();
   useEffect(() => {
@@ -17,18 +18,13 @@ export function useRealtimeInvalidation() {
     import('@supabase/supabase-js').then(({ createClient }) => {
       if (cancelled) return;
       const client = createClient(URL_ as string, ANON as string, { auth: { persistSession: false } });
-      let timer: ReturnType<typeof setTimeout> | undefined;
-      const invalidate = () => {
-        clearTimeout(timer);
-        timer = setTimeout(() => qc.invalidateQueries(), 400);
-      };
       const channel = client
         .channel('kaushalsetu-live')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'EmploymentRecord' }, invalidate)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'FollowUp' }, invalidate)
+        .on('broadcast', { event: 'changed' }, () => {
+          qc.invalidateQueries();
+        })
         .subscribe();
       cleanup = () => {
-        clearTimeout(timer);
         client.removeChannel(channel);
       };
     });

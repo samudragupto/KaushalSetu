@@ -14,6 +14,6 @@ export function adapterStatuses(): AdapterStatus[] {
     { key: 'epfo', label: 'EPFO', mode: epfoMode(), detail: 'EPFO Signal Simulator (no public API)' },
     { key: 'bhashini', label: 'Bhashini', mode: bhashiniMode(), detail: bhashiniMode() === 'LIVE' ? 'Bhashini inference pipeline' : 'Pre-translated en/hi/mr strings' },
     { key: 'storage', label: 'Storage', mode: storageMode(), detail: storageMode() === 'LIVE' ? 'Supabase Storage, signed URLs' : 'Inline Postgres storage (keyless)' },
-    { key: 'realtime', label: 'Live updates', mode: 'DEMO', detail: 'TanStack Query polling every 5 s; Supabase Realtime when the web app has anon keys' },
+    { key: 'realtime', label: 'Live updates', mode: storageMode(), detail: storageMode() === 'LIVE' ? 'Supabase Realtime broadcast plus 5 s polling' : 'TanStack Query polling every 5 s' },
   ];
 }

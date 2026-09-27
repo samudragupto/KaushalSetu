@@ -91,7 +91,7 @@ export default function PublicAggregates() {
             </div>
             <div className="flex flex-wrap items-center gap-2 rounded-lg border border-primary-100 bg-primary-50/60 px-4 py-2.5 text-[13px] text-primary-700">
               <ShieldCheck className="h-4 w-4" strokeWidth={1.5} />
-              Based on <span className="num font-semibold">{d.consentingTrainees.toLocaleString('en-IN')}</span> consenting trainees. <span className="num font-semibold">{d.excludedForConsent.toLocaleString('en-IN')}</span> excluded at their request. <span className="num font-semibold">{d.suppressedCells}</span> district figures withheld for small numbers. As of {dateShort(d.asOf)}.
+              Based on <span className="num font-semibold">{d.consentingTrainees.toLocaleString('en-IN')}</span> consenting trainees. <span className="num font-semibold">{d.excludedForConsent.toLocaleString('en-IN')}</span> excluded at their request. <span className="num font-semibold">{d.suppressedCells}</span> district figures withheld because fewer than 10 people are behind them. As of {dateShort(d.asOf)}.
             </div>
             <div className="grid gap-4 lg:grid-cols-12">
               <Card className="lg:col-span-5">
