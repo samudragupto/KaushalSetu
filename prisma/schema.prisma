@@ -1,0 +1,445 @@
+// KaushalSetu data model.
+// Postgres is hosted on Supabase in production and reached through the connection pooler
+// (session mode, port 5432). DIRECT_URL is used by `prisma migrate`; both point at the pooler.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  GOVT
+  PROVIDER
+  AGENT
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum SocialCategory {
+  SC
+  ST
+  OBC
+  OPEN
+  EWS
+}
+
+enum ProviderType {
+  ITI
+  PMKK
+  PRIVATE
+  POLYTECHNIC
+}
+
+enum ConsentScope {
+  employmentTracking
+  wageTracking
+  publicAggregates
+}
+
+enum Channel {
+  WHATSAPP
+  SMS
+  IVR
+  AGENT
+  PORTAL
+  ENROLMENT_FORM
+}
+
+enum EmploymentStatus {
+  PENDING_VERIFICATION
+  VERIFIED
+  REJECTED
+}
+
+enum VerificationMethod {
+  EMPLOYER_LINK
+  EPFO_SIM
+  AGENT
+  DOCUMENT
+}
+
+enum OutcomeEventType {
+  PLACED
+  SELF_EMPLOYED
+  APPRENTICE
+  UNEMPLOYED
+  JOB_SWITCH
+  WAGE_CHANGE
+  DROPPED_OUT
+  ATTRITION
+}
+
+enum OutcomeSource {
+  TRAINER_REPORT
+  BOT
+  EMPLOYER_VERIFIED
+  EPFO_SIM
+  AGENT_CALL
+}
+
+enum AttritionReason {
+  LOW_WAGE
+  RELOCATION
+  WORKING_CONDITIONS
+  SKILL_MISMATCH
+  FAMILY
+  HEALTH
+  OTHER
+}
+
+enum Milestone {
+  MONTH_3
+  MONTH_6
+  MONTH_12
+  MONTH_24
+}
+
+enum FollowUpStatus {
+  SCHEDULED
+  SENT
+  RESPONDED
+  ESCALATED
+}
+
+enum AgentTaskStatus {
+  QUEUED
+  IN_CALL
+  RESOLVED
+}
+
+enum AlertRule {
+  PLACEMENT_VERIFICATION_GAP
+  WAGE_OUTLIER
+  EMPLOYER_CONCENTRATION
+  REJECTION_CLUSTER
+}
+
+enum AlertStatus {
+  OPEN
+  RESOLVED
+}
+
+enum MessageDirection {
+  IN
+  OUT
+}
+
+enum EvidenceKind {
+  UDYAM_CERTIFICATE
+  SHOP_PHOTO
+  UPI_SUMMARY
+  OTHER
+}
+
+enum StorageBackend {
+  SUPABASE
+  INLINE
+}
+
+model Trainee {
+  id             String         @id @default(cuid())
+  unifiedId      String         @unique
+  fullName       String
+  dob            DateTime
+  gender         Gender
+  socialCategory SocialCategory
+  district       String
+  phonePrimary   String
+  phoneAlternate String?
+  whatsappNumber String?
+  email          String?
+  preferredLang  String         @default("mr")
+  isPersona      Boolean        @default(false)
+  upskillOptIn   Boolean        @default(false)
+  createdAt      DateTime       @default(now())
+
+  consents          ConsentRecord[]
+  enrollments       Enrollment[]
+  employmentRecords EmploymentRecord[]
+  outcomeEvents     OutcomeEvent[]
+  followUps         FollowUp[]
+  agentTasks        AgentTask[]
+  botSessions       BotSession[]
+  evidence          EvidenceFile[]
+  auditLogs         AuditLog[]
+
+  @@index([district])
+}
+
+// Append-only: rows are never updated or deleted by the application.
+model ConsentRecord {
+  id         String       @id @default(cuid())
+  traineeId  String
+  granted    Boolean
+  scope      ConsentScope
+  capturedAt DateTime     @default(now())
+  channel    Channel
+  sourceIp   String?
+  trainee    Trainee      @relation(fields: [traineeId], references: [id], onDelete: Cascade)
+
+  @@index([traineeId, scope, capturedAt])
+}
+
+model Provider {
+  id          String       @id @default(cuid())
+  name        String
+  type        ProviderType
+  district    String
+  contact     String
+  enrollments Enrollment[]
+  users       User[]
+  alerts      IntegrityAlert[]
+}
+
+model Course {
+  id            String       @id @default(cuid())
+  code          String       @unique
+  name          String
+  nsqfLevel     Int
+  sector        String
+  durationHours Int
+  skills        String[]
+  enrollments   Enrollment[]
+}
+
+model Enrollment {
+  id              String   @id @default(cuid())
+  traineeId       String
+  courseId        String
+  providerId      String
+  batchStart      DateTime
+  batchEnd        DateTime
+  attendancePct   Float
+  assessmentScore Float
+  certified       Boolean
+  trainee         Trainee  @relation(fields: [traineeId], references: [id], onDelete: Cascade)
+  course          Course   @relation(fields: [courseId], references: [id])
+  provider        Provider @relation(fields: [providerId], references: [id])
+
+  @@index([traineeId])
+  @@index([providerId])
+  @@index([courseId])
+}
+
+model Employer {
+  id            String             @id @default(cuid())
+  name          String
+  gstin         String             @unique
+  gstinValid    Boolean
+  district      String
+  sector        String
+  employeeCount Int
+  records       EmploymentRecord[]
+  alerts        IntegrityAlert[]
+}
+
+model EmploymentRecord {
+  id                 String              @id @default(cuid())
+  traineeId          String
+  employerId         String
+  designation        String
+  monthlyWage        Int
+  startDate          DateTime
+  endDate            DateTime?
+  status             EmploymentStatus    @default(PENDING_VERIFICATION)
+  verificationMethod VerificationMethod?
+  verifiedAt         DateTime?
+  rejectedAt         DateTime?
+  rejectionReason    String?
+  evidence           Json                @default("{}")
+  createdAt          DateTime            @default(now())
+  trainee            Trainee             @relation(fields: [traineeId], references: [id], onDelete: Cascade)
+  employer           Employer            @relation(fields: [employerId], references: [id])
+  tokens             VerificationToken[]
+  alerts             IntegrityAlert[]
+
+  @@index([traineeId])
+  @@index([employerId])
+  @@index([status])
+}
+
+model OutcomeEvent {
+  id              String           @id @default(cuid())
+  traineeId       String
+  eventType       OutcomeEventType
+  occurredAt      DateTime
+  source          OutcomeSource
+  payload         Json             @default("{}")
+  attritionReason AttritionReason?
+  createdAt       DateTime         @default(now())
+  trainee         Trainee          @relation(fields: [traineeId], references: [id], onDelete: Cascade)
+
+  @@index([traineeId, occurredAt])
+}
+
+model FollowUp {
+  id          String         @id @default(cuid())
+  traineeId   String
+  milestone   Milestone
+  channel     Channel        @default(WHATSAPP)
+  status      FollowUpStatus @default(SCHEDULED)
+  attempts    Int            @default(0)
+  responses   Json           @default("{}")
+  dueAt       DateTime
+  sentAt      DateTime?
+  respondedAt DateTime?
+  createdAt   DateTime       @default(now())
+  trainee     Trainee        @relation(fields: [traineeId], references: [id], onDelete: Cascade)
+  agentTasks  AgentTask[]
+  sessions    BotSession[]
+
+  @@unique([traineeId, milestone])
+  @@index([status])
+}
+
+model SkillGapSignal {
+  id             String   @id @default(cuid())
+  extractedSkill String
+  district       String
+  courseId       String
+  severity       Int      @default(0)
+  sampleQuotes   String[]
+  updatedAt      DateTime @updatedAt
+
+  @@unique([extractedSkill, district, courseId])
+}
+
+model AgentTask {
+  id              String          @id @default(cuid())
+  followUpId      String?
+  traineeId       String
+  assignedTo      String?
+  status          AgentTaskStatus @default(QUEUED)
+  callNotes       String?
+  resolvedOutcome Json?
+  createdAt       DateTime        @default(now())
+  openedAt        DateTime?
+  resolvedAt      DateTime?
+  followUp        FollowUp?       @relation(fields: [followUpId], references: [id], onDelete: SetNull)
+  trainee         Trainee         @relation(fields: [traineeId], references: [id], onDelete: Cascade)
+  assignee        User?           @relation(fields: [assignedTo], references: [id])
+
+  @@index([status])
+}
+
+model User {
+  id           String      @id @default(cuid())
+  role         Role
+  name         String
+  title        String
+  email        String      @unique
+  passwordHash String
+  providerId   String?
+  provider     Provider?   @relation(fields: [providerId], references: [id])
+  agentTasks   AgentTask[]
+}
+
+model AuditLog {
+  id              String   @id @default(cuid())
+  actorRole       String
+  actorId         String?
+  actorName       String?
+  action          String
+  reason          String?
+  targetTraineeId String?
+  timestamp       DateTime @default(now())
+  trainee         Trainee? @relation(fields: [targetTraineeId], references: [id], onDelete: SetNull)
+
+  @@index([timestamp])
+}
+
+model BotSession {
+  id         String       @id @default(cuid())
+  traineeId  String
+  followUpId String?
+  state      String
+  lang       String       @default("mr")
+  context    Json         @default("{}")
+  active     Boolean      @default(true)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  trainee    Trainee      @relation(fields: [traineeId], references: [id], onDelete: Cascade)
+  followUp   FollowUp?    @relation(fields: [followUpId], references: [id], onDelete: SetNull)
+  messages   BotMessage[]
+
+  @@index([traineeId, active])
+}
+
+model BotMessage {
+  id        String           @id @default(cuid())
+  sessionId String
+  direction MessageDirection
+  body      String
+  buttons   Json             @default("[]")
+  meta      Json             @default("{}")
+  createdAt DateTime         @default(now())
+  readAt    DateTime?
+  session   BotSession       @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, createdAt])
+}
+
+model VerificationToken {
+  id                 String           @id @default(cuid())
+  token              String           @unique
+  employmentRecordId String
+  otp                String?
+  otpIssuedAt        DateTime?
+  expiresAt          DateTime
+  usedAt             DateTime?
+  createdAt          DateTime         @default(now())
+  record             EmploymentRecord @relation(fields: [employmentRecordId], references: [id], onDelete: Cascade)
+}
+
+model EvidenceFile {
+  id        String         @id @default(cuid())
+  traineeId String
+  kind      EvidenceKind
+  fileName  String
+  mimeType  String
+  sizeBytes Int
+  storage   StorageBackend
+  path      String?
+  data      String?
+  createdAt DateTime       @default(now())
+  trainee   Trainee        @relation(fields: [traineeId], references: [id], onDelete: Cascade)
+}
+
+model IntegrityAlert {
+  id                 String            @id @default(cuid())
+  key                String            @unique
+  rule               AlertRule
+  severity           String
+  title              String
+  detail             String
+  metrics            Json              @default("{}")
+  status             AlertStatus       @default(OPEN)
+  providerId         String?
+  employerId         String?
+  employmentRecordId String?
+  createdAt          DateTime          @default(now())
+  lastSeenAt         DateTime          @default(now())
+  provider           Provider?         @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  employer           Employer?         @relation(fields: [employerId], references: [id], onDelete: Cascade)
+  record             EmploymentRecord? @relation(fields: [employmentRecordId], references: [id], onDelete: Cascade)
+}
+
+model OtpChallenge {
+  id        String   @id @default(cuid())
+  subject   String
+  code      String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([subject])
+}

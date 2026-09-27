@@ -1,0 +1,36 @@
+{
+  "name": "kaushalsetu",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Post-training outcomes tracking and analytics platform for Maharashtra skilling programmes (SIH 2025, Problem 26135)",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "prisma": {
+    "schema": "prisma/schema.prisma",
+    "seed": "tsx prisma/seed.ts"
+  },
+  "scripts": {
+    "dev:api": "npm run dev -w @kaushalsetu/api",
+    "dev:web": "npm run dev -w @kaushalsetu/web",
+    "build": "npm run build -w @kaushalsetu/api && npm run build -w @kaushalsetu/web",
+    "typecheck": "npm run typecheck -w @kaushalsetu/shared && npm run typecheck -w @kaushalsetu/api && npm run typecheck -w @kaushalsetu/web",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:reset": "prisma migrate reset --force --skip-generate"
+  },
+  "devDependencies": {
+    "prisma": "^6.19.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.19.0"
+  }
+}
