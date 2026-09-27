@@ -72,7 +72,8 @@ jobs:
         with:
           node-version: 20
           cache: npm
-      - run: npm ci
+      - name: Install (including dev tools, as on Render)
+        run: npm ci --include=dev
       - name: Build API
         run: npm run build -w @kaushalsetu/api
       - name: Apply migrations
